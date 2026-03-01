@@ -1,8 +1,6 @@
 
 var cls = require("./lib/class"),
     url = require('url'),
-    wsserver = require("websocket-server"),
-    miksagoConnection = require('websocket-server/lib/ws/connection'),
     worlizeRequest = require('websocket').request,
     http = require('http'),
     Utils = require('./utils'),
@@ -135,47 +133,20 @@ WS.MultiVersionWebsocketServer = Server.extend({
             log.info("Server is listening on port "+port);
         });
         
-        this._miksagoServer = wsserver.createServer();
-        this._miksagoServer.server = this._httpServer;
-        this._miksagoServer.addListener('connection', function(connection) {
-            // Add remoteAddress property
-            connection.remoteAddress = connection._socket.remoteAddress;
-
-            // We want to use "sendUTF" regardless of the server implementation
-            connection.sendUTF = connection.send;
-            var c = new WS.miksagoWebSocketConnection(self._createId(), connection, self);
-            
-            if(self.connection_callback) {
-                self.connection_callback(c);
-            }
-            self.addConnection(c);
-        });
+        var WebSocketServer = require('websocket').server;
+        this.worlizeServerConfig.httpServer = this._httpServer;
+        this._wsServer = new WebSocketServer(this.worlizeServerConfig);
         
-        this._httpServer.on('upgrade', function(req, socket, head) {
-            if (typeof req.headers['sec-websocket-version'] !== 'undefined') {
-                // WebSocket hybi-08/-09/-10 connection (WebSocket-Node)
-                var wsRequest = new worlizeRequest(socket, req, self.worlizeServerConfig);
-                try {
-                    wsRequest.readHandshake();
-                    var wsConnection = wsRequest.accept(wsRequest.requestedProtocols[0], wsRequest.origin);
-                    var c = new WS.worlizeWebSocketConnection(self._createId(), wsConnection, self);
-                    if(self.connection_callback) {
-                        self.connection_callback(c);
-                    }
-                    self.addConnection(c);
+        this._wsServer.on('request', function (request) {
+            try {
+                var wsConnection = request.accept(null, request.origin);
+                var c = new WS.worlizeWebSocketConnection(self._createId(), wsConnection, self);
+                if (self.connection_callback) {
+                    self.connection_callback(c);
                 }
-                catch(e) {
-                    console.log("WebSocket Request unsupported by WebSocket-Node: " + e.toString());
-                    return;
-                }
-            } else {
-                // WebSocket hixie-75/-76/hybi-00 connection (node-websocket-server)
-                if (req.method === 'GET' &&
-                    (req.headers.upgrade && req.headers.connection) &&
-                    req.headers.upgrade.toLowerCase() === 'websocket' &&
-                    req.headers.connection.toLowerCase() === 'upgrade') {
-                    new miksagoConnection(self._miksagoServer.manager, self._miksagoServer.options, req, socket, head);
-                }
+                self.addConnection(c);
+            } catch (e) {
+                console.log("WebSocket Request unsupported: " + e.toString());
             }
         });
     },

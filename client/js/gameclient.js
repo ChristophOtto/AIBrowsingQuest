@@ -50,11 +50,7 @@ define(['player', 'entityfactory', 'lib/bison'], function(Player, EntityFactory,
             
             log.info("Trying to connect to server : "+url);
 
-            if(window.MozWebSocket) {
-                this.connection = new MozWebSocket(url);
-            } else {
-                this.connection = new WebSocket(url);
-            }
+            this.connection = new WebSocket(url);
             
             if(dispatcherMode) {
                 this.connection.onmessage = function(e) {
@@ -90,6 +86,7 @@ define(['player', 'entityfactory', 'lib/bison'], function(Player, EntityFactory,
 
                 this.connection.onerror = function(e) {
                     log.error(e, true);
+                    alert("WebSocket Error: " + (e.message || "Unknown Error. Check console."));
                 };
 
                 this.connection.onclose = function() {
@@ -318,7 +315,7 @@ define(['player', 'entityfactory', 'lib/bison'], function(Player, EntityFactory,
             var id = data[1],
                 dmg = data[2];
         
-            if(this.dmg_callback) {
+            if(this.dmg_callback) {
                 this.dmg_callback(id, dmg);
             }
         },
@@ -327,7 +324,7 @@ define(['player', 'entityfactory', 'lib/bison'], function(Player, EntityFactory,
             var worldPlayers = data[1],
                 totalPlayers = data[2];
         
-            if(this.population_callback) {
+            if(this.population_callback) {
                 this.population_callback(worldPlayers, totalPlayers);
             }
         },

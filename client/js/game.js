@@ -711,24 +711,11 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
         },
 
         connect: function(started_callback) {
-            var self = this,
-                connecting = false; // always in dispatcher mode in the build version
+            var self = this;
     
             this.client = new GameClient(this.host, this.port);
             
-            //>>excludeStart("prodHost", pragmas.prodHost);
-            var config = this.app.config.local || this.app.config.dev;
-            if(config) {
-                this.client.connect(config.dispatcher); // false if the client connects directly to a game server
-                connecting = true;
-            }
-            //>>excludeEnd("prodHost");
-            
-            //>>includeStart("prodHost", pragmas.prodHost);
-            if(!connecting) {
-                this.client.connect(true); // always use the dispatcher in production
-            }
-            //>>includeEnd("prodHost");
+            this.client.connect(false);
             
             this.client.onDispatched(function(host, port) {
                 log.debug("Dispatched to game server "+host+ ":"+port);
@@ -864,7 +851,7 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
                         }
                     });
                 
-                    if((self.player.gridX <= 85 && self.player.gridY <= 179 && self.player.gridY > 178) || (self.player.gridX <= 85 && self.player.gridY <= 266 && self.player.gridY > 265)) {
+                    if((self.player.gridX <= 85 && self.player.gridY <= 179 && self.player.gridY > 178) || (self.player.gridX <= 85 && self.player.gridY <= 266 && self.player.gridY > 265)) {
                         self.tryUnlockingAchievement("INTO_THE_WILD");
                     }
                     
@@ -1092,7 +1079,7 @@ function(InfoManager, BubbleManager, Renderer, Map, Animation, Sprite, AnimatedT
             
                 self.client.onSpawnCharacter(function(entity, x, y, orientation, targetId) {
                     if(!self.entityIdExists(entity.id)) {
-                        try {
+                        try {
                             if(entity.id !== self.playerId) {
                                 entity.setSprite(self.sprites[entity.getSpriteName()]);
                                 entity.setGridPosition(x, y);
